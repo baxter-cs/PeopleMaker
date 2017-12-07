@@ -1,0 +1,77 @@
+<html>
+  <head>
+    <script src="https://unpkg.com/vue"></script>
+
+  </head>
+  <body>
+    <div id="app">
+
+
+      <div class="people">
+        <div v-for="person in people">{{ person.name }}, {{ person.age(day) }}</div>
+        <div class="new-person" >
+          <input v-model="newName" placeholder="new person name here"/>
+          <input v-model.number ="newAge" placeholder="new person age here" type="number"/>
+          <button @click="makePerson()">Add</button>
+      </div>
+      <div>Current Day: {{ day }}</div>
+      <div><button @click="advanceTime(10)">10 Days</button></div>
+
+      <div class="traits">
+        <div v-for="trait in allTraits">
+          <div class="name">{{ trait.name }}</div>
+          <div class="description">{{ trait.description }}</div>
+        </div>
+      </div>
+
+    </div>
+    <script>
+    var yearLength = 365;
+
+    var app = new Vue({
+      el: '#app',
+      data: {
+        text: "",
+        day: 0,
+        chosenTraits: [
+
+        ],
+        allTraits: [
+
+        ],
+        people: [
+
+        ],
+      },
+      methods: {
+        makePerson: function(){
+          var name = this.newName;
+          var age = this.newAge;
+          var newPerson = new Person(name, age, this.day);
+          this.people.push(newPerson);
+          this.newName = null;
+          this.birthdate = null;
+        },
+        advanceTime: function(days){
+          this.day += days;
+        }
+
+      },
+    });
+
+
+    function Person(name, age, day){
+      this.name = name;
+      this.birthdate = day - age * yearLength;
+    }
+
+    Person.prototype = {
+      age: function(day) {
+        return (day - this.birthdate) / yearLength;
+      }
+
+    }
+    </script>
+
+  </body>
+</html>
