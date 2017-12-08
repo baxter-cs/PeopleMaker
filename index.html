@@ -1,44 +1,52 @@
 <html>
   <head>
     <script src="https://unpkg.com/vue"></script>
-
+    <style>
+      .stat-block{
+        display: flex;
+        width: 50%;
+      }
+      .stat{
+        flex: 1;
+      }
+    </style>
   </head>
   <body>
     <div id="app">
 
 
       <div class="people">
-        <div v-for="person in people">{{ person.name }}, {{ person.age(day) }}</div>
+        <div v-for="person in people">
+          <div>{{ person.name }}, {{ person.age(day) }}</div>
+          <div class="stat-block">
+            <div class="stat" v-for="(value, key) in person.stats">{{ key }}: {{ value }} ({{ person.statMod(key) }})</div>
+          </div>
+          <div class="stat-block">
+            <div class="stat">HP: {{ person.currentHealth() }} / {{ person.health }}</div>
+          </div>
+        </div>
+
         <div class="new-person" >
           <input v-model="newName" placeholder="new person name here"/>
           <input v-model.number ="newAge" placeholder="new person age here" type="number"/>
           <button @click="makePerson()">Add</button>
-      </div>
-      <div>Current Day: {{ day }}</div>
-      <div><button @click="advanceTime(10)">10 Days</button></div>
-
-      <div class="traits">
-        <div v-for="trait in allTraits">
-          <div class="name">{{ trait.name }}</div>
-          <div class="description">{{ trait.description }}</div>
         </div>
-      </div>
 
-    </div>
+        <div>Current Day: {{ day }}</div>
+        <div><button @click="advanceTime(10)">10 Days</button></div>
+
+      </div>
+    </DIV>
     <script>
+    var stats = ["STR", "DEX", "CON", "WIS", "INT", "CHA"]
     var yearLength = 365;
 
     var app = new Vue({
       el: '#app',
       data: {
-        text: "",
         day: 0,
-        chosenTraits: [
-
-        ],
-        allTraits: [
-
-        ],
+        newName: "",
+        newAge: 0,
         people: [
 
         ],
@@ -48,6 +56,14 @@
           var name = this.newName;
           var age = this.newAge;
           var newPerson = new Person(name, age, this.day);
+
+          for (var statKey in stats){
+            var stat = stats[statKey];
+            newPerson.addStat(stat, SumDice(4,6,3));
+          }
+          newPerson.health = newPerson.statMod("CON") + 10;
+          newPerson.wounds = 0;
+
           this.people.push(newPerson);
           this.newName = null;
           this.birthdate = null;
@@ -59,18 +75,45 @@
       },
     });
 
+    function SumDice(count, sides, keep, compareFunc){
+      compareFunc = compareFunc? compareFunc : function(a,b){ return a - b };
+
+      var rolls = [];
+      for (var i = 0; i < count; i++){
+        var roll = Math.ceil(Math.random() * sides);
+        rolls.push(roll);
+      }
+      rolls.sort(compareFunc);
+      var total = 0;
+      for(var i = 0; i < keep; i++){
+        total += rolls.pop();
+      }
+      return total;
+    }
 
     function Person(name, age, day){
       this.name = name;
       this.birthdate = day - age * yearLength;
+      this.stats = {};
     }
 
     Person.prototype = {
       age: function(day) {
         return (day - this.birthdate) / yearLength;
-      }
+      },
+      currentHealth: function() {
+        return this.health - this.wounds;
+      },
+      addStat(key, value){
+        this.stats[key] = value;
+      },
+      statMod: function(statName) {
+        return Math.floor((this.stats[statName] - 10) / 2)
+      },
 
     }
+
+    var firstNames
     </script>
 
   </body>
