@@ -12,8 +12,8 @@
 
       .knacks{
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
         grid-auto-rows: 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       }
       .knack{
         border: 1px solid black;
@@ -25,6 +25,15 @@
           display: grid;
           grid-template-columns: repeat(3, 1fr);
 
+      }
+
+      .knack .description{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        font-size: 10pt;
+        margin: 2px;
       }
     </style>
   </head>
@@ -56,7 +65,7 @@
       </div>
       <div v-if="viewKnacks" class="knacks">
         <div class="knack" v-for="(knack, key) in knacks">
-          <div>{{ knack.value }}</div>
+          <div class="description">{{ knack.value }}</div>
           <button @click="removeKnack(knack)">REMOVE</button>
         </div>
 
