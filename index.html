@@ -9,36 +9,60 @@
       .stat{
         flex: 1;
       }
+
+      .knacks{
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-auto-rows: 1fr;
+      }
+      .knack{
+        border: 1px solid black;
+        margin: 2px;
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+      }
+      .people{
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+
+      }
     </style>
   </head>
   <body>
     <div id="app">
+      <div class="new-person" >
+        <input v-model="newName" placeholder="new person name here"/>
+        <input v-model.number ="newAge" placeholder="new person age here" type="number"/>
+        <button @click="makePerson()">Add</button>
+      </div>
 
 
       <div class="people">
         <div v-for="person in people">
-          <div>{{ person.name }}, {{ person.age(day) }}</div>
-          <div class="stat-block">
+          <div>Name: {{ person.name }}</div><div>Age: {{ person.age(day) }}</div>
+          <div>Instinct: {{ person.instinct.value }}</div><div> Knack: {{ person.knack.value }}</div>
+          <div v-if="showStats" class="stat-block">
             <div class="stat" v-for="(value, key) in person.stats">{{ key }}: {{ value }} ({{ person.statMod(key) }})</div>
           </div>
           <div class="stat-block">
             <div class="stat">HP: {{ person.currentHealth() }} / {{ person.health }}</div>
           </div>
         </div>
-
-        <div class="new-person" >
-          <input v-model="newName" placeholder="new person name here"/>
-          <input v-model.number ="newAge" placeholder="new person age here" type="number"/>
-          <button @click="makePerson()">Add</button>
+      </div>
+      <div><input type="checkbox" id="showKnacks" v-model="viewKnacks"/>
+        <span v-if="viewKnacks">Hide</span>
+        <span v-else>Show</span>
+         Knacks
+      </div>
+      <div v-if="viewKnacks" class="knacks">
+        <div class="knack" v-for="(knack, key) in knacks">
+          <div>{{ knack.value }}</div>
+          <button @click="removeKnack(knack)">REMOVE</button>
         </div>
-
-        <div>Current Day: {{ day }}</div>
-        <div><button @click="advanceTime(10)">10 Days</button></div>
 
       </div>
     </DIV>
     <script>
-    var stats = ["STR", "DEX", "CON", "WIS", "INT", "CHA"]
     var yearLength = 365;
 
     var app = new Vue({
@@ -46,36 +70,87 @@
       data: {
         day: 0,
         newName: "",
+        viewKnacks: false,
         newAge: 0,
-        people: [
-
-        ],
+        knacks: [],
+        instincts: [],
+        people: [],
       },
       methods: {
         makePerson: function(){
+          if (this.newName == ""){
+            this.newName = RandomChoice(firstNames);
+          }
           var name = this.newName;
-          var age = this.newAge;
-          var newPerson = new Person(name, age, this.day);
+          if(this.newAge != ""){
+            var age = this.newAge;
+          } else {
+            age = Math.floor(Math.random() * 30) + 16;
+          }
+          var newPerson = new Person(name, age,  this.day);
 
-          for (var statKey in stats){
-            var stat = stats[statKey];
+          var statKeys = ["STR", "DEX", "CON", "WIS", "INT", "CHA"];
+
+          for (var statKey in statKeys){
+            var stat = statKeys[statKey];
             newPerson.addStat(stat, SumDice(4,6,3));
           }
           newPerson.health = newPerson.statMod("CON") + 10;
           newPerson.wounds = 0;
 
+          newPerson.instinct = RandomChoice(this.instincts);
+          newPerson.knack = RandomChoice(this.knacks);
+
           this.people.push(newPerson);
-          this.newName = null;
+          this.newName = "";
           this.birthdate = null;
         },
         advanceTime: function(days){
           this.day += days;
+        },
+        removeKnack: function(knack){
+          for(var i in this.knacks){
+            if(this.knacks[i] == knack){
+              this.knacks.splice(i,1);
+              return knack;
+            }
+          }
         }
-
       },
+
     });
 
-    function SumDice(count, sides, keep, compareFunc){
+    function Person(name, age,  day){
+      this.name = name;
+      this.birthdate = day - age * yearLength;
+      this.stats = {};
+      this.drives = [];
+    }
+
+    Person.prototype = {
+      age: function(day) {
+        return (day - this.birthdate) / yearLength;
+      },
+
+      currentHealth: function() {
+        return this.health - this.wounds;
+      },
+
+      addStat(key, value){
+        this.stats[key] = value;
+      },
+
+      statMod: function(statName) {
+        return Math.floor((this.stats[statName] - 10) / 2)
+      },
+
+    }
+
+
+    function RandomChoice(list){
+      return list[Math.floor(list.length * Math.random())];
+    }
+    function SumDice(count, sides, keep,  compareFunc){
       compareFunc = compareFunc? compareFunc : function(a,b){ return a - b };
 
       var rolls = [];
@@ -91,29 +166,239 @@
       return total;
     }
 
-    function Person(name, age, day){
-      this.name = name;
-      this.birthdate = day - age * yearLength;
-      this.stats = {};
+    //list of names from http://acodispo.github.io/Dungeon-World-HTML-SRD/appendices/npcs/
+    var firstNames = [
+      "Finbar", "Hywn", "One Eye", "Alhoro", "Arlon", "Yev", "Slime",
+      "Jocat", "Ewing", "Lim", "Poy", "Milo", "Deryl", "Medlyn", "Astrafel",
+      "Daelwyn", "Feliana", "Damarra", "Sistranalle", "Pendrell", "Melliandre",
+      "Dagoliir", "Baldric", "Leena", "Dunwick", "Willem", "Edwyn", "Florian",
+      "Seraphine", "Quorra", "Charlotte", "Lily", "Ramonde", "Cassandra", "Durga",
+      "Aelfar", "Gerda", "Rurgosh", "Bjorn", "Drummond", "Helga", "Siggrun", "Freya",
+      "Wesley", "Brinton", "Jon", "Sara", "Hawthorn", "Elise", "Clarke", "Lenore",
+      "Piotr", "Dahlia", "Carmine", "Hycorax", "Ethanwe", "Sinathel", "Demanor",
+      "Menoliir", "Mithralan", "Taeros", "Aegor", "Tanner", "Dunstan", "Rose", "Ivy", "Robard",
+      "Mab", "Thistle", "Puck", "Anne", "Serah", "Elana", "Obelis", "Herran", "Syla",
+      "Andanna", "Siobhan", "Aziz", "Pelin", "Sibel", "Nils", "Wei", "Ozruk", "Surtur",
+      "Brunhilda", "Annika", "Janos", "Greta", "Dim", "Rundrig", "Jarl", "Xotoq",
+      "Elohiir", "Sharaseth", "Hasrith", "Shevaral", "Cadeus", "Eldar", "Kithracet",
+      "Thelian", "Finnegan", "Olive", "Randolph", "Bartleby", "Aubrey", "Baldwin",
+      "Becca", "Hawke", "Rudiger", "Gregor", "Brianne",  "Walton"
+    ];
+    //list of instincts from http://acodispo.github.io/Dungeon-World-HTML-SRD/appendices/npcs/
+    var instincts = [
+      "To avenge",
+      "To spread the good word",
+      "To reunite with a loved one",
+      "To make money",
+      "To make amends",
+      "To explore a mysterious place",
+      "To uncover a hidden truth",
+      "To locate a lost thing",
+      "To kill a hated foe",
+      "To conquer a faraway land",
+      "To cure an illness",
+      "To craft a masterwork",
+      "To survive just one more day",
+      "To earn affection",
+      "To prove a point",
+      "To be smarter, faster and stronger",
+      "To heal an old wound",
+      "To extinguish an evil forever",
+      "To hide from a shameful fact",
+      "To evangelize",
+      "To spread suffering",
+      "To prove worth",
+      "To rise in rank",
+      "To be praised",
+      "To discover the truth",
+      "To make good on a bet",
+      "To get out of an obligation",
+      "To convince someone to do their dirty work",
+      "To steal something valuable",
+      "To overcome a bad habit",
+      "To commit an atrocity",
+      "To earn renown",
+      "To accumulate power",
+      "To save someone from a monstrosity",
+      "To teach",
+      "To settle down",
+      "To get just one more haul",
+      "To preserve the law",
+      "To discover",
+      "To devour",
+      "To restore the family name",
+      "To live a quiet life",
+      "To help others",
+      "To atone",
+      "To prove their worth",
+      "To gain honor",
+      "To expand their land",
+      "To gain a title",
+      "To retreat from society",
+      "To escape",
+      "To party",
+      "To return home",
+      "To serve",
+      "To reclaim what was taken",
+      "To do what must be done",
+      "To be a champion",
+      "To avoid notice",
+      "To help a family member",
+      "To perfect a skill",
+      "To travel",
+      "To overcome a disadvantage",
+      "To play the game",
+      "To establish a dynasty",
+      "To improve the realm",
+      "To retire",
+      "To recover a lost memory",
+      "To battle",
+      "To become a terror to criminals",
+      "To raise dragons",
+      "To live up to expectations",
+      "To become someone else",
+      "To do what can’t be done",
+      "To be remembered in song",
+      "To be forgotten",
+      "To find true love",
+      "To lose their mind",
+      "To indulge",
+      "To make the best of it",
+      "To find the one",
+      "To destroy an artifact",
+      "To show them all",
+      "To bring about unending summer",
+      "To fly",
+      "To find the six-fingered man",
+      "To wake the ancient sleepers",
+      "To entertain",
+      "To follow an order",
+      "To die gloriously",
+      "To be careful",
+      "To show kindness",
+      "To not screw it all up",
+      "To uncover the past",
+      "To go where no man has gone before",
+      "To do good",
+      "To become a beast",
+      "To spill blood",
+      "To live forever",
+      "To hunt the most dangerous game",
+      "To hate",
+      "To run away",
+    ];
+
+    //list of knacks from http://acodispo.github.io/Dungeon-World-HTML-SRD/appendices/npcs/
+    var knacks = [
+      "Criminal connections",
+      "Muscle",
+      "Skill with a specific weapon",
+      "Hedge wizardry",
+      "Comprehensive local knowledge",
+      "Noble blood",
+      "A one-of-a-kind item",
+      "Special destiny",
+      "Unique perspective",
+      "Hidden knowledge",
+      "Magical awareness",
+      "Abnormal parentage",
+      "Political leverage",
+      "A tie to a monster",
+      "A secret",
+      "True love",
+      "An innocent heart",
+      "A plan for the perfect crime",
+      "A one-way ticket to paradise",
+      "A mysterious ore",
+      "Money, money, money",
+      "Divine blessing",
+      "Immunity from the law",
+      "Prophecy",
+      "Secret martial arts techniques",
+      "A ring of power",
+      "A much-needed bag of taters",
+      "A heart",
+      "A fortified position",
+      "Lawmaking",
+      "Tongues",
+      "A discerning eye",
+      "Endurance",
+      "A safe place",
+      "Visions",
+      "A beautiful mind",
+      "A clear voice",
+      "Stunning looks",
+      "A catchy tune",
+      "Invention",
+      "Baking",
+      "Brewing",
+      "Smelting",
+      "Woodworking",
+      "Writing",
+      "Immunity to fire",
+      "Cooking",
+      "Storytelling",
+      "Ratcatching",
+      "Lying",
+      "Utter unremarkableness",
+      "Mind-bending sexiness",
+      "Undefinable coolness",
+      "A way with knots",
+      "Wheels of polished steel",
+      "A magic carpet",
+      "Endless ideas",
+      "Persistence",
+      "A stockpile of food",
+      "A hidden path",
+      "Piety",
+      "Resistance to disease",
+      "A library",
+      "A silver tongue",
+      "Bloodline",
+      "An innate spell",
+      "Balance",
+      "Souls",
+      "Speed",
+      "A sense of right and wrong",
+      "Certainty",
+      "An eye for detail",
+      "Heroic self-sacrifice",
+      "Sense of direction",
+      "A big idea",
+      "A hidden entrance to the city",
+      "The love of someone powerful",
+      "Unquestioning loyalty",
+      "Exotic fruit",
+      "Poison",
+      "Perfect memory",
+      "The language of birds",
+      "A key to an important door",
+      "Metalworking",
+      "Mysterious benefactors",
+      "Steely nerves",
+      "Bluffing",
+      "A trained wolf",
+      "A long-lost sibling, regained",
+      "An arrow with your name on it",
+      "A true name",
+      "Luck",
+      "The attention of supernatural powers",
+      "Kindness",
+      "Strange tattoos",
+      "A majestic beard",
+      "A book in a strange language",
+      "Power overwhelming",
+      "Delusions of grandeur",
+      "The wind at his back and a spring in his step",
+    ];
+
+    for(var i = 0; i < knacks.length; i++){
+      app.knacks.push({ value: knacks[i]})
+    }
+    for(var i = 0; i < instincts.length; i++){
+      app.instincts.push({ value: instincts[i]})
     }
 
-    Person.prototype = {
-      age: function(day) {
-        return (day - this.birthdate) / yearLength;
-      },
-      currentHealth: function() {
-        return this.health - this.wounds;
-      },
-      addStat(key, value){
-        this.stats[key] = value;
-      },
-      statMod: function(statName) {
-        return Math.floor((this.stats[statName] - 10) / 2)
-      },
-
-    }
-
-    var firstNames
     </script>
 
   </body>
