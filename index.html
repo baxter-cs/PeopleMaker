@@ -48,7 +48,7 @@
     </DIV>
     <script>
     var yearLength = 365;
-    var people;
+    var people = [];
     try{
       var people = JSON.parse(localStorage.getItem('people'));
     } catch(e) {
@@ -56,11 +56,14 @@
     }
 
     function main() {
-      for (var i = 0; i < people.length; i++){
-        Object.setPrototypeOf(people[i], Person.prototype);
-        console.log(people[i]);
+      if (people == null){
+        people = [];
+      } else {
+        for (var i = 0; i < people.length; i++){
+          Object.setPrototypeOf(people[i], Person.prototype);
+          console.log(people[i]);
+        }
       }
-
 
       var app = new Vue({
         el: '#app',
