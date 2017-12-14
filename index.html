@@ -1,40 +1,9 @@
 <html>
   <head>
     <script src="https://unpkg.com/vue"></script>
+    <link href="style/main.css" rel="stylesheet"/>
     <style>
-      .stat-block{
-        display: flex;
-        width: 50%;
-      }
-      .stat{
-        flex: 1;
-      }
 
-      .knacks{
-        display: grid;
-        grid-auto-rows: 1fr;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      }
-      .knack{
-        border: 1px solid black;
-        margin: 2px;
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-      }
-      .people{
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-
-      }
-
-      .knack .description{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        font-size: 10pt;
-        margin: 2px;
-      }
     </style>
   </head>
   <body>
@@ -42,20 +11,25 @@
       <div class="new-person" >
         <input v-model="newName" placeholder="new person name here"/>
         <input v-model.number ="newAge" placeholder="new person age here" type="number"/>
-        <button @click="makePerson()">Add</button>
+        <button @click="makePerson()">Add</button>        <button @click="savePeople()">Save All</button>
+
       </div>
 
 
       <div class="people">
-        <div v-for="person in people">
-          <div>Name: {{ person.name }}</div><div>Age: {{ person.age(day) }}</div>
-          <div>Instinct: {{ person.instinct.value }}</div><div> Knack: {{ person.knack.value }}</div>
-          <div v-if="showStats" class="stat-block">
-            <div class="stat" v-for="(value, key) in person.stats">{{ key }}: {{ value }} ({{ person.statMod(key) }})</div>
+        <div class="person" v-for="person in people">
+          <div class="name"><div class="stat-title">Name</div> {{ person.name }}</div>
+          <div class="age"><div class="stat-title">Age</div> {{ person.age(day) }}</div>
+          <div class="hp" @click="damagePerson(person)"><div class="stat-title">HP</div> {{ person.currentHealth() }} / {{ person.health }}</div>
+          <button class="remove" @click="removePerson(person)">REMOVE</button>
+          <div class="instinct"><div class="stat-title">Instinct</div>
+            <textarea class='sheet-description' v-model="person.instinct"></textarea>
           </div>
-          <div class="stat-block">
-            <div class="stat">HP: {{ person.currentHealth() }} / {{ person.health }}</div>
+          <div class="knack"><div class="stat-title">Knack</div>
+            <textarea class="sheet-description" v-model="person.knack"></textarea>
           </div>
+
+          <!--div class="stat" v-for="(value, key) in person.stats"><div class="stat-title">{{ key }}</div>{{ value }} ({{ person.statMod(key) }})</div-->
         </div>
       </div>
       <div><input type="checkbox" id="showKnacks" v-model="viewKnacks"/>
@@ -73,61 +47,99 @@
     </DIV>
     <script>
     var yearLength = 365;
+    var people;
+    try{
+      var people = JSON.parse(localStorage.getItem('people'));
+    } catch(e) {
+      people = [];
+    }
 
-    var app = new Vue({
-      el: '#app',
-      data: {
-        day: 0,
-        newName: "",
-        viewKnacks: false,
-        newAge: 0,
-        knacks: [],
-        instincts: [],
-        people: [],
-      },
-      methods: {
-        makePerson: function(){
-          if (this.newName == ""){
-            this.newName = RandomChoice(firstNames);
-          }
-          var name = this.newName;
-          if(this.newAge != ""){
-            var age = this.newAge;
-          } else {
-            age = Math.floor(Math.random() * 30) + 16;
-          }
-          var newPerson = new Person(name, age,  this.day);
+    function main() {
+      for (var i = 0; i < people.length; i++){
+        Object.setPrototypeOf(people[i], Person.prototype);
+        console.log(people[i]);
+      }
 
-          var statKeys = ["STR", "DEX", "CON", "WIS", "INT", "CHA"];
 
-          for (var statKey in statKeys){
-            var stat = statKeys[statKey];
-            newPerson.addStat(stat, SumDice(4,6,3));
-          }
-          newPerson.health = newPerson.statMod("CON") + 10;
-          newPerson.wounds = 0;
-
-          newPerson.instinct = RandomChoice(this.instincts);
-          newPerson.knack = RandomChoice(this.knacks);
-
-          this.people.push(newPerson);
-          this.newName = "";
-          this.birthdate = null;
+      var app = new Vue({
+        el: '#app',
+        data: {
+          day: 0,
+          showStats: true,
+          newName: "",
+          viewKnacks: false,
+          newAge: 0,
+          knacks: [],
+          instincts: [],
+          people: people,
         },
-        advanceTime: function(days){
-          this.day += days;
-        },
-        removeKnack: function(knack){
-          for(var i in this.knacks){
-            if(this.knacks[i] == knack){
-              this.knacks.splice(i,1);
-              return knack;
+        methods: {
+          makePerson: function(){
+            if (this.newName == ""){
+              this.newName = RandomChoice(firstNames);
             }
-          }
-        }
-      },
+            var name = this.newName;
+            if(this.newAge != ""){
+              var age = this.newAge;
+            } else {
+              age = Math.floor(Math.random() * 30) + 16;
+            }
+            var newPerson = new Person(name, age,  this.day);
 
-    });
+            var statKeys = ["STR", "DEX", "CON", "WIS", "INT", "CHA"];
+
+            for (var statKey in statKeys){
+              var stat = statKeys[statKey];
+              newPerson.addStat(stat, SumDice(4,6,3));
+            }
+            newPerson.health = newPerson.statMod("CON") + 10;
+            newPerson.wounds = 0;
+
+            newPerson.instinct = RandomChoice(this.instincts).value;
+            newPerson.knack = RandomChoice(this.knacks).value;
+
+            this.people.push(newPerson);
+            this.newName = "";
+            this.birthdate = null;
+          },
+          advanceTime: function(days){
+            this.day += days;
+          },
+          removeKnack: function(knack){
+            for(var i in this.knacks){
+              if(this.knacks[i] == knack){
+                this.knacks.splice(i,1);
+                return knack;
+              }
+            }
+          },
+          removePerson: function(person){
+            for(var i in this.people){
+              if(this.people[i] == person){
+                this.people.splice(i,1);
+                return person;
+              }
+            }
+          },
+          damagePerson: function(person){
+            person.takeDamage(1);
+          },
+          savePeople: function() {
+            localStorage.setItem('people', JSON.stringify(this.people));
+          }
+        },
+
+      });
+
+      for(var i = 0; i < knacks.length; i++){
+        app.knacks.push({ value: knacks[i]})
+      }
+      for(var i = 0; i < instincts.length; i++){
+        app.instincts.push({ value: instincts[i]})
+      }
+    }
+
+
 
     function Person(name, age,  day){
       this.name = name;
@@ -142,7 +154,12 @@
       },
 
       currentHealth: function() {
-        return this.health - this.wounds;
+        return Math.max(this.health - this.wounds,0);
+      },
+
+      takeDamage: function(amount) {
+        this.wounds += amount;
+        return this.currentHealth();
       },
 
       addStat(key, value){
@@ -154,7 +171,6 @@
       },
 
     }
-
 
     function RandomChoice(list){
       return list[Math.floor(list.length * Math.random())];
@@ -401,12 +417,9 @@
       "The wind at his back and a spring in his step",
     ];
 
-    for(var i = 0; i < knacks.length; i++){
-      app.knacks.push({ value: knacks[i]})
-    }
-    for(var i = 0; i < instincts.length; i++){
-      app.instincts.push({ value: instincts[i]})
-    }
+
+
+    main();
 
     </script>
 
